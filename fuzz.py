@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 
-df = pd.read_excel(
-    'https://raw.githubusercontent.com/whoisryu/Fuzzy_Logic/master/restoran.xlsx')
+df = pd.read_excel('restoran.xlsx')
 df.head()
 
 ids = np.array(df)
