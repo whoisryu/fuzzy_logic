@@ -1,44 +1,37 @@
+from pandas import ExcelWriter
 import pandas as pd
 import numpy as np
 import math
 
 df = pd.read_excel('restoran.xlsx')
-df.head()
 
 ids = np.array(df)
 ids = ids[:, [0]]
-idDf = pd.DataFrame(ids)
-idDf.head()
 
 makanan = np.array(df)
 makanan = makanan[:, [0, 2]]
-makananDf = pd.DataFrame(makanan)
-makananDf.head()
 
 pelayanan = np.array(df)
 pelayanan = pelayanan[:, [0, 1]]
-pelayananDf = pd.DataFrame(pelayanan)
-pelayananDf.head()
 
 
 def clasificate(x, a, b, c):
-    if a <= x <= b:
-        nilai = (x - a) / (b - a)
-        return nilai
-    elif b <= x <= c:
-        if b == x:
-            nilai = 1
-            return nilai
-        nilai = (c - x) / (c - b)
-        return nilai
+    if x <= a or x >= c:
+        return 0
+    elif a < x <= b:
+        if x == b:
+            return 1
+        return (x - a) / (b - a)
+    elif b < x <= c:
+        if c == x:
+            return 1
+        return (c - x) / (c - b)
     else:
-        nilai = 0
-        return nilai
+        return 0
 
 
 valueMakanan = {}
 valuePelayanan = {}
-
 
 for nilai in pelayanan:
     id = nilai[0]
@@ -46,27 +39,27 @@ for nilai in pelayanan:
 
     valuePelayanan[id] = {}
 
-    print("POIN: ",  poin)
+    print("NILAI:",  poin, " ID:", id)
 
-    stp = clasificate(poin, 0, 12.5, 25)
+    stp = clasificate(poin, 0, 1, 25)
     print("Sangat tidak puas:", stp)
-    valuePelayanan[id][0] = stp
+    valuePelayanan[id]['stp'] = stp
 
     tp = clasificate(poin, 20, 32.5, 45)
     print("tidak puas:", tp)
-    valuePelayanan[id][1] = tp
+    valuePelayanan[id]['tp'] = tp
 
     cp = clasificate(poin, 40, 52.5, 65)
     print("cukup puas:", cp)
-    valuePelayanan[id][2] = cp
+    valuePelayanan[id]['cp'] = cp
 
     p = clasificate(poin, 60, 72.5, 85)
     print("puas:", p)
-    valuePelayanan[id][3] = p
+    valuePelayanan[id]['p'] = p
 
-    sp = clasificate(poin, 80,  92.5, 100)
+    sp = clasificate(poin, 80,  100, 101)
     print("Sangat puas:", sp)
-    valuePelayanan[id][4] = sp
+    valuePelayanan[id]['sp'] = sp
 
     print("---------------")
 
@@ -76,47 +69,104 @@ for nilai in makanan:
 
     valueMakanan[id] = {}
 
-    print("NILAI: ",  poin)
+    print("NILAI:",  poin, " ID:", id)
 
-    ste = clasificate(poin, 0, 1.5, 3)
+    ste = clasificate(poin, 0, 1, 3)
     print("Sangat tidak enak:", ste)
-    valueMakanan[id][0] = ste
+    valueMakanan[id]['ste'] = ste
 
     te = clasificate(poin, 2, 3.5, 5)
     print("tidak enak:", te)
-    valueMakanan[id][1] = te
+    valueMakanan[id]['te'] = te
 
     ce = clasificate(poin, 4, 5.5, 7)
     print("cukup enak:", ce)
-    valueMakanan[id][2] = ce
+    valueMakanan[id]['ce'] = ce
 
     e = clasificate(poin, 6, 7.5, 9)
     print("enak:", e)
-    valueMakanan[id][3] = e
+    valueMakanan[id]['e'] = e
 
-    se = clasificate(poin, 8,  9, 10)
+    se = clasificate(poin, 8,  10, 11)
     print("Sangat enak:", se)
-    valueMakanan[id][4] = se
+    valueMakanan[id]['se'] = se
 
     print("---------------")
 
-minValue = 0
-tempList = []
-rankList = []
-for id in ids:
-    for i in range(5):
-        for j in range(5):
-            minValue = min(valueMakanan[id[0]][i], valuePelayanan[id[0]][j])
-            tempList.append(minValue)
-    rankList.append((id[0], max(tempList)))
+
+inferenced = []
 
 
-# take second element for sort
-def takeSecond(elem):
-    return elem[1]
+def inferenceBuruk(makanan, pelayanan, id):
+    if makanan != 0 and pelayanan != 0:
+        inferenced.append((id, [min(makanan, pelayanan), 12.5]))
 
 
-rankList.sort(key=takeSecond, reverse=True)
+def inferenceStandar(makanan, pelayanan, id):
+    if makanan != 0 and pelayanan != 0:
+        inferenced.append((id, [min(makanan, pelayanan), 50]))
 
-dfResult = pd.DataFrame(rankList, columns=['ID', 'POIN'])
+
+def inferenceTerbaik(makanan, pelayanan, id):
+    if makanan != 0 and pelayanan != 0:
+        inferenced.append((id, [min(makanan, pelayanan), 87.5]))
+
+
+for i in ids:
+    id = i[0]
+    inferenceBuruk(valueMakanan[id]['ste'], valuePelayanan[id]['stp'], id)
+    inferenceBuruk(valueMakanan[id]['ste'], valuePelayanan[id]['tp'], id)
+    inferenceBuruk(valueMakanan[id]['ste'], valuePelayanan[id]['cp'], id)
+    inferenceBuruk(valueMakanan[id]['ste'], valuePelayanan[id]['p'], id)
+    inferenceBuruk(valueMakanan[id]['ste'], valuePelayanan[id]['cp'], id)
+    inferenceBuruk(valueMakanan[id]['te'], valuePelayanan[id]['stp'], id)
+    inferenceBuruk(valueMakanan[id]['te'], valuePelayanan[id]['tp'], id)
+    inferenceBuruk(valueMakanan[id]['te'], valuePelayanan[id]['cp'], id)
+
+    inferenceStandar(valueMakanan[id]['ce'], valuePelayanan[id]['stp'], id)
+    inferenceStandar(valueMakanan[id]['ce'], valuePelayanan[id]['tp'], id)
+    inferenceStandar(valueMakanan[id]['ce'], valuePelayanan[id]['cp'], id)
+    inferenceStandar(valueMakanan[id]['ce'], valuePelayanan[id]['p'], id)
+    inferenceStandar(valueMakanan[id]['e'], valuePelayanan[id]['stp'], id)
+    inferenceStandar(valueMakanan[id]['e'], valuePelayanan[id]['tp'], id)
+    inferenceStandar(valueMakanan[id]['e'], valuePelayanan[id]['cp'], id)
+    inferenceStandar(valueMakanan[id]['se'], valuePelayanan[id]['stp'], id)
+    inferenceStandar(valueMakanan[id]['se'], valuePelayanan[id]['tp'], id)
+    inferenceStandar(valueMakanan[id]['te'], valuePelayanan[id]['p'], id)
+    inferenceStandar(valueMakanan[id]['te'], valuePelayanan[id]['sp'], id)
+
+    inferenceTerbaik(valueMakanan[id]['se'], valuePelayanan[id]['cp'], id)
+    inferenceTerbaik(valueMakanan[id]['se'], valuePelayanan[id]['p'], id)
+    inferenceTerbaik(valueMakanan[id]['se'], valuePelayanan[id]['sp'], id)
+    inferenceTerbaik(valueMakanan[id]['e'], valuePelayanan[id]['p'], id)
+    inferenceTerbaik(valueMakanan[id]['e'], valuePelayanan[id]['sp'], id)
+    inferenceTerbaik(valueMakanan[id]['ce'], valuePelayanan[id]['sp'], id)
+
+defuzzied = []
+totalKali = 0.0
+totalBagi = 0.0
+
+for i in ids:
+    id = i[0]
+    for inf in inferenced:
+        if id == inf[0]:
+            kali = inf[1][0]*inf[1][1]
+            totalKali += kali
+            totalBagi += inf[1][0]
+    if totalKali == 0 or totalBagi == 0:
+        defuzzied.append([id, 0])
+    else:
+        defuzzied.append([id, totalKali/totalBagi])
+    totalKali = 0
+    totalBagi = 0
+dfDeffuzied = pd.DataFrame(defuzzied, columns=['ID', 'VALUE'])
+
+
+defuzzied.sort(key=lambda x: x[1], reverse=True)
+dfResult = pd.DataFrame(defuzzied, columns=['ID', 'POIN'])
+dfResult = dfResult.head(10)
 dfResult
+
+
+dfResult
+dfResult.to_excel("result.xls")
